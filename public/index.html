@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Image Rating</title>
+</head>
+<body>
+    <div id="image-container">
+        <img id="current-image" src="" alt="Current Image" />
+    </div>
+    <div id="rating-container">
+        <button onclick="rate(1)">★</button>
+        <button onclick="rate(2)">★★</button>
+        <button onclick="rate(3)">★★★</button>
+        <button onclick="rate(4)">★★★★</button>
+        <button onclick="rate(5)">★★★★★</button>
+    </div>
+    <div id="admin-controls" style="display: none;">
+        <button onclick="skipImage()">Skip</button>
+    </div>
+    <p id="rating-count"></p>
+    <script>
+        const ws = new WebSocket('ws://localhost:8080');
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'image') {
+                document.getElementById('current-image').src = data.data.path;
+            } else if (data.type === 'update') {
+                document.getElementById('rating-count').innerText = `Ratings: ${data.data.totalRatings}`;
+            }
+        };
+
+        function rate(value) {
+            ws.send(JSON.stringify({ type: 'rate', rating: value }));
+        }
+
+        function skipImage() {
+            ws.send(JSON.stringify({ type: 'skip' }));
+        }
+    </script>
+</body>
+</html>
