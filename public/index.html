@@ -1,41 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Image Rating</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Image Rating</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="image-container">
-        <img id="current-image" src="" alt="Current Image" />
-    </div>
-    <div id="rating-container">
-        <button onclick="rate(1)">★</button>
-        <button onclick="rate(2)">★★</button>
-        <button onclick="rate(3)">★★★</button>
-        <button onclick="rate(4)">★★★★</button>
-        <button onclick="rate(5)">★★★★★</button>
-    </div>
-    <div id="admin-controls" style="display: none;">
-        <button onclick="skipImage()">Skip</button>
-    </div>
-    <p id="rating-count"></p>
-    <script>
-        const ws = new WebSocket('ws://localhost:8080');
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data.type === 'image') {
-                document.getElementById('current-image').src = data.data.path;
-            } else if (data.type === 'update') {
-                document.getElementById('rating-count').innerText = `Ratings: ${data.data.totalRatings}`;
-            }
-        };
+    <h1>Welcome to Image Rating</h1>
 
-        function rate(value) {
-            ws.send(JSON.stringify({ type: 'rate', rating: value }));
-        }
+    <!-- Modal for Upload -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <h2>Upload an Image</h2>
+            <form id="uploadForm">
+                <input type="file" id="imageInput" name="image" accept="image/*" required>
+                <button type="submit">Upload</button>
+            </form>
+            <button id="closeModal">Close</button>
+        </div>
+    </div>
 
-        function skipImage() {
-            ws.send(JSON.stringify({ type: 'skip' }));
-        }
-    </script>
+    <!-- Rating Section -->
+    <div id="ratingSection" style="display: none;">
+        <h2>Rate the Photo</h2>
+        <div id="currentImage"></div>
+        <div id="ratingControls">
+            <button class="rateButton" data-rating="1">⭐</button>
+            <button class="rateButton" data-rating="2">⭐⭐</button>
+            <button class="rateButton" data-rating="3">⭐⭐⭐</button>
+            <button class="rateButton" data-rating="4">⭐⭐⭐⭐</button>
+            <button class="rateButton" data-rating="5">⭐⭐⭐⭐⭐</button>
+        </div>
+    </div>
+
+    <script src="client.js"></script>
 </body>
 </html>
