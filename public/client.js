@@ -35,17 +35,33 @@ ws.onmessage = (event) => {
     }
 };
 
-// Handle upload modal
-document.getElementById('closeModal').addEventListener('click', () => {
-    document.getElementById('uploadModal').style.display = 'none';
-    document.getElementById('ratingSection').style.display = 'block';
+// Handle modal visibility
+const uploadModal = document.getElementById('uploadModal');
+const ratingSection = document.getElementById('ratingSection');
+const closeModalButton = document.getElementById('closeModal');
+const uploadForm = document.getElementById('uploadForm');
+const imageInput = document.getElementById('imageInput');
+const currentImageDiv = document.getElementById('currentImage');
+const rateButtons = document.querySelectorAll('.rateButton');
+
+
+// Open modal on load (simulate app initialization)
+window.onload = () => {
+    uploadModal.classList.add('active');
+    ratingSection.style.display = 'none';
+};
+
+// Close modal and show rating section
+closeModalButton.addEventListener('click', () => {
+    uploadModal.classList.remove('active');
+    ratingSection.style.display = 'block';
     if (photos.length > 0) {
         displayImageForRating();
     }
 });
 
 // Handle file upload
-document.getElementById('uploadForm').addEventListener('submit', (event) => {
+uploadForm.addEventListener('submit', (event) => {
     event.preventDefault();
 
     const formData = new FormData();
@@ -64,7 +80,7 @@ document.getElementById('uploadForm').addEventListener('submit', (event) => {
 });
 
 // Handle ratings
-document.querySelectorAll('.rateButton').forEach((button) => {
+rateButtons.forEach((button) => {
     button.addEventListener('click', () => {
         const rating = button.getAttribute('data-rating');
         const photo = photos[currentPhotoIndex];
@@ -76,19 +92,32 @@ document.querySelectorAll('.rateButton').forEach((button) => {
     });
 });
 
+// Display the current image for rating
 function displayImageForRating() {
     if (currentPhotoIndex < photos.length) {
         const photo = photos[currentPhotoIndex];
-        const imageDiv = document.getElementById('currentImage');
-        imageDiv.innerHTML = `<img src="${photo.url}" alt="Current Image" />`;
+        currentImageDiv.innerHTML = `<img src="${photo.url}" alt="Current Image" class="responsive-image" />`;
     } else {
-        document.getElementById('currentImage').innerHTML = '<p>Done</p>';
+        currentImageDiv.innerHTML = '<p>All images have been rated. Thank you!</p>';
     }
 }
+
+// Move to the next image
+function goToNextImage() {
+    currentPhotoIndex++;
+    if (currentPhotoIndex < photos.length) {
+        displayImageForRating();
+    } else {
+        currentImageDiv.innerHTML = '<p>All images have been rated. Thank you!</p>';
+    }
+}
+
 
 function updateGallery() {
     const gallery = document.getElementById('gallery');
     gallery.innerHTML = ''; // Clear the gallery
+
+    // Add images to the gallery
     photos.forEach(photo => {
         const averageRating = photo.ratings.length
             ? (photo.ratings.reduce((a, b) => a + b.rating, 0) / photo.ratings.length).toFixed(2)
@@ -101,10 +130,22 @@ function updateGallery() {
         `;
         gallery.appendChild(imageDiv);
     });
-    // Update CSS grid to ensure it displays correctly
-    gallery.style.gridTemplateColumns = `repeat(${Math.ceil(photos.length / 3)}, minmax(100px, 1fr))`;
-    gallery.style.gridTemplateRows = `repeat(3, 1fr)`;
+
+    // Dynamically adjust the grid
+    const containerWidth = gallery.clientWidth;
+    const containerHeight = gallery.clientHeight;
+    const totalPhotos = photos.length;
+
+    // Calculate rows and columns to maintain a balanced grid
+    const columns = Math.ceil(Math.sqrt(totalPhotos * (containerWidth / containerHeight)));
+    const rows = Math.ceil(totalPhotos / columns);
+
+    gallery.style.display = 'grid';
+    gallery.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+    gallery.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+    gallery.style.gap = '5px'; // Optional spacing between items
 }
+
 
 function goToNextImage() {
     currentPhotoIndex++;
