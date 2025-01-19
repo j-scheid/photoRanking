@@ -3,6 +3,7 @@ const http = require('http');
 const WebSocket = require('ws');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -13,12 +14,21 @@ let clientIdCounter = 1;
 let uploadedImages = [];
 let ratings = {};
 
+// Ensure the 'uploads' directory exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir);
+}
+
 // Multer setup for file uploads
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({
+    dest: uploadsDir,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+});
 
 // Serve static files
 app.use(express.static('public'));
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(uploadsDir));
 
 // WebSocket connection handling
 wss.on('connection', (ws) => {
@@ -65,7 +75,9 @@ app.post('/upload', upload.single('image'), (req, res) => {
 
 function broadcast(data) {
     Object.values(clients).forEach((client) => {
-        client.send(JSON.stringify(data));
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(data));
+        }
     });
 }
 

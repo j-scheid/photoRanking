@@ -1,4 +1,4 @@
-const ws = new WebSocket(`ws://${location.host}`);
+const ws = new WebSocket(`wss://${location.host}`);
 let clientId = null;
 let currentPhotoIndex = 0;
 let uploadedImages = [];
@@ -43,7 +43,6 @@ document.getElementById('uploadForm').addEventListener('submit', (event) => {
     formData.append('clientId', clientId);
 
     fetch('/upload', { method: 'POST', body: formData })
-        .then((response) => response.text())
         .then(() => {
             document.getElementById('uploadModal').style.display = 'none';
             document.getElementById('ratingSection').style.display = 'block';
