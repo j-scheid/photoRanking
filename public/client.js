@@ -5,6 +5,7 @@ const ws = new WebSocket(`${protocol}://${location.host}`);
 let clientId = null;
 let currentPhotoIndex = 0;
 let uploadedImages = [];
+let ratedImages = new Set();
 
 ws.onmessage = (event) => {
     const data = JSON.parse(event.data);
@@ -20,6 +21,7 @@ ws.onmessage = (event) => {
         if (uploadedImages.length === 1) {
             displayImageForRating();
         }
+        updateGallery(data.imageUrl, 0); // Initialize with 0 rating
     }
 
     if (data.type === 'updateRating') {
@@ -42,7 +44,9 @@ document.getElementById('uploadForm').addEventListener('submit', (event) => {
 
     const formData = new FormData();
     const imageInput = document.getElementById('imageInput');
-    formData.append('image', imageInput.files[0]);
+    for (let i = 0; i < imageInput.files.length; i++) {
+        formData.append('images', imageInput.files[i]);
+    }
     formData.append('clientId', clientId);
 
     fetch('/upload', { method: 'POST', body: formData })
@@ -57,14 +61,23 @@ document.getElementById('uploadForm').addEventListener('submit', (event) => {
 document.querySelectorAll('.rateButton').forEach((button) => {
     button.addEventListener('click', () => {
         const rating = button.getAttribute('data-rating');
-        ws.send(JSON.stringify({ type: 'rateImage', index: currentPhotoIndex, rating }));
+        const imageUrl = uploadedImages[currentPhotoIndex];
+        if (!ratedImages.has(imageUrl)) {
+            ws.send(JSON.stringify({ type: 'rateImage', index: currentPhotoIndex, rating }));
+            ratedImages.add(imageUrl);
+            goToNextImage();
+        }
     });
 });
 
 function displayImageForRating() {
-    const imageUrl = uploadedImages[currentPhotoIndex];
-    const imageDiv = document.getElementById('currentImage');
-    imageDiv.innerHTML = `<img src="${imageUrl}" alt="Current Image" />`;
+    if (currentPhotoIndex < uploadedImages.length) {
+        const imageUrl = uploadedImages[currentPhotoIndex];
+        const imageDiv = document.getElementById('currentImage');
+        imageDiv.innerHTML = `<img src="${imageUrl}" alt="Current Image" />`;
+    } else {
+        document.getElementById('currentImage').innerHTML = '<p>Done</p>';
+    }
 }
 
 function updateGallery(imageUrl, averageRating) {
@@ -77,9 +90,21 @@ function updateGallery(imageUrl, averageRating) {
             imageDiv = document.createElement('div');
             gallery.appendChild(imageDiv);
         }
-        imageDiv.innerHTML = `
-            <img src="${imageUrl}" alt="Uploaded Image" />
-            <p>Average Rating: ${averageRating.toFixed(2)}</p>
-        `;
+        const ratingDisplay = imageDiv.querySelector('.ratingDisplay');
+        if (ratingDisplay) {
+            ratingDisplay.textContent = averageRating === 0
+                ? 'No ratings yet'
+                : `Average Rating: ${averageRating.toFixed(2)}`;
+        } else {
+            imageDiv.innerHTML = `
+                <img src="${imageUrl}" alt="Uploaded Image" />
+                <p class="ratingDisplay">${averageRating === 0 ? 'No ratings yet' : `Average Rating: ${averageRating.toFixed(2)}`}</p>
+            `;
+        }
     }
+}
+
+function goToNextImage() {
+    currentPhotoIndex++;
+    displayImageForRating();
 }

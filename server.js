@@ -60,18 +60,19 @@ wss.on('connection', (ws) => {
 });
 
 // Endpoint to handle file uploads
-app.post('/upload', upload.single('image'), (req, res) => {
-    const imageUrl = `/uploads/${req.file.filename}`;
-    uploadedImages.push(imageUrl);
-    ratings[imageUrl] = [];
+app.post('/upload', upload.array('images'), (req, res) => {
+    req.files.forEach((file) => {
+        const imageUrl = `/uploads/${file.filename}`;
+        uploadedImages.push(imageUrl);
+        ratings[imageUrl] = [];
 
-    broadcast({
-        type: 'newImage',
-        clientId: req.body.clientId,
-        imageUrl,
+        broadcast({
+            type: 'newImage',
+            imageUrl,
+        });
     });
 
-    res.status(200).send('Image uploaded successfully');
+    res.status(200).send('Images uploaded successfully');
 });
 
 function broadcast(data) {
