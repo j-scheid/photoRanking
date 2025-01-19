@@ -87,3 +87,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server running on ${isProduction ? 'Render' : 'localhost'} at port ${PORT}`);
 });
+
+app.get('/photos', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'photos.html'));
+});
