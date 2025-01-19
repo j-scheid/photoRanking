@@ -1,4 +1,7 @@
-const ws = new WebSocket(`wss://${location.host}`);
+// Dynamically determine WebSocket URL based on environment
+const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+const ws = new WebSocket(`${protocol}://${location.host}`);
+
 let clientId = null;
 let currentPhotoIndex = 0;
 let uploadedImages = [];

@@ -6,6 +6,7 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
+const isProduction = process.env.NODE_ENV === 'production'; // Check environment
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
@@ -84,5 +85,5 @@ function broadcast(data) {
 // Start the server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on ${isProduction ? 'Render' : 'localhost'} at port ${PORT}`);
 });
