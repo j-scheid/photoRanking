@@ -1,17 +1,42 @@
 body {
     font-family: Arial, sans-serif;
-    padding: 20px;
-    max-width: 800px;
-    margin: auto;
-}
-
-h1 {
+    margin: 0;
+    padding: 0;
     text-align: center;
 }
 
-#gallery img {
+h1 {
+    margin-top: 20px;
+    color: #333;
+}
+
+#gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-auto-rows: minmax(200px, auto);
+    gap: 20px;
+    margin: 20px;
+    padding: 0;
+    max-height: calc(3 * 200px + 2 * 20px); /* Allow up to three rows */
+    overflow-y: auto;
+}
+
+.image-item {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    text-align: center;
+}
+
+.image-item img {
     max-width: 100%;
     height: auto;
-    display: block;
-    margin: 10px 0;
+    border-radius: 4px;
+}
+
+.image-item p {
+    margin: 10px 0 0;
+    font-size: 14px;
+    color: #555;
 }

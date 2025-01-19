@@ -4,7 +4,7 @@ const ws = new WebSocket(`${protocol}://${location.host}`);
 
 let clientId = null;
 let currentPhotoIndex = 0;
-let uploadedImages = [];
+let photos = [];
 let ratedImages = new Set();
 
 ws.onmessage = (event) => {
@@ -17,15 +17,21 @@ ws.onmessage = (event) => {
     }
 
     if (data.type === 'newImage') {
-        uploadedImages.push(data.imageUrl);
-        if (uploadedImages.length === 1) {
+        photos.push(data.photo);
+        console.log('Photos array updated:', photos);
+        if (photos.length === 1) {
             displayImageForRating();
         }
-        updateGallery(data.imageUrl, 0); // Initialize with 0 rating
+        updateGallery();
     }
 
     if (data.type === 'updateRating') {
-        updateGallery(data.imageUrl, data.averageRating);
+        const photoIndex = photos.findIndex(photo => photo.id === data.photo.id);
+        if (photoIndex !== -1) {
+            photos[photoIndex] = data.photo;
+            console.log('Photos array updated:', photos);
+            updateGallery();
+        }
     }
 };
 
@@ -33,7 +39,7 @@ ws.onmessage = (event) => {
 document.getElementById('closeModal').addEventListener('click', () => {
     document.getElementById('uploadModal').style.display = 'none';
     document.getElementById('ratingSection').style.display = 'block';
-    if (uploadedImages.length > 0) {
+    if (photos.length > 0) {
         displayImageForRating();
     }
 });
@@ -61,47 +67,43 @@ document.getElementById('uploadForm').addEventListener('submit', (event) => {
 document.querySelectorAll('.rateButton').forEach((button) => {
     button.addEventListener('click', () => {
         const rating = button.getAttribute('data-rating');
-        const imageUrl = uploadedImages[currentPhotoIndex];
-        if (!ratedImages.has(imageUrl)) {
-            ws.send(JSON.stringify({ type: 'rateImage', index: currentPhotoIndex, rating }));
-            ratedImages.add(imageUrl);
+        const photo = photos[currentPhotoIndex];
+        if (!ratedImages.has(photo.url)) {
+            ws.send(JSON.stringify({ type: 'rateImage', index: currentPhotoIndex, rating, clientId }));
+            ratedImages.add(photo.url);
             goToNextImage();
         }
     });
 });
 
 function displayImageForRating() {
-    if (currentPhotoIndex < uploadedImages.length) {
-        const imageUrl = uploadedImages[currentPhotoIndex];
+    if (currentPhotoIndex < photos.length) {
+        const photo = photos[currentPhotoIndex];
         const imageDiv = document.getElementById('currentImage');
-        imageDiv.innerHTML = `<img src="${imageUrl}" alt="Current Image" />`;
+        imageDiv.innerHTML = `<img src="${photo.url}" alt="Current Image" />`;
     } else {
         document.getElementById('currentImage').innerHTML = '<p>Done</p>';
     }
 }
 
-function updateGallery(imageUrl, averageRating) {
+function updateGallery() {
     const gallery = document.getElementById('gallery');
-    if (gallery) {
-        let imageDiv = Array.from(gallery.children).find(
-            (div) => div.querySelector('img').src === imageUrl
-        );
-        if (!imageDiv) {
-            imageDiv = document.createElement('div');
-            gallery.appendChild(imageDiv);
-        }
-        const ratingDisplay = imageDiv.querySelector('.ratingDisplay');
-        if (ratingDisplay) {
-            ratingDisplay.textContent = averageRating === 0
-                ? 'No ratings yet'
-                : `Average Rating: ${averageRating.toFixed(2)}`;
-        } else {
-            imageDiv.innerHTML = `
-                <img src="${imageUrl}" alt="Uploaded Image" />
-                <p class="ratingDisplay">${averageRating === 0 ? 'No ratings yet' : `Average Rating: ${averageRating.toFixed(2)}`}</p>
-            `;
-        }
-    }
+    gallery.innerHTML = ''; // Clear the gallery
+    photos.forEach(photo => {
+        const averageRating = photo.ratings.length
+            ? (photo.ratings.reduce((a, b) => a + b.rating, 0) / photo.ratings.length).toFixed(2)
+            : 'No ratings yet';
+        const imageDiv = document.createElement('div');
+        imageDiv.className = 'image-item';
+        imageDiv.innerHTML = `
+            <img src="${photo.url}" alt="Uploaded Image" />
+            <p class="ratingDisplay">Average Rating: ${averageRating}</p>
+        `;
+        gallery.appendChild(imageDiv);
+    });
+    // Update CSS grid to ensure it displays correctly
+    gallery.style.gridTemplateColumns = `repeat(${Math.ceil(photos.length / 3)}, minmax(100px, 1fr))`;
+    gallery.style.gridTemplateRows = `repeat(3, 1fr)`;
 }
 
 function goToNextImage() {

@@ -12,8 +12,8 @@ const wss = new WebSocket.Server({ server });
 
 const clients = {};
 let clientIdCounter = 1;
-let uploadedImages = [];
-let ratings = {};
+let photos = [];
+let photoIdCounter = 1;
 
 // Ensure the 'uploads' directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -40,18 +40,17 @@ wss.on('connection', (ws) => {
         const data = JSON.parse(message);
 
         if (data.type === 'rateImage') {
-            const { index, rating } = data;
-            const imageUrl = uploadedImages[index];
-            if (!ratings[imageUrl]) ratings[imageUrl] = [];
-            ratings[imageUrl].push(Number(rating));
+            const { index, rating, clientId } = data;
+            const photo = photos[index];
+            if (!photo.ratings) photo.ratings = [];
+            photo.ratings.push({ clientId, rating: Number(rating) });
 
             const averageRating =
-                ratings[imageUrl].reduce((a, b) => a + b, 0) / ratings[imageUrl].length;
+                photo.ratings.reduce((a, b) => a + b.rating, 0) / photo.ratings.length;
 
             broadcast({
                 type: 'updateRating',
-                imageUrl,
-                averageRating,
+                photo: { ...photo, averageRating },
             });
         }
     });
@@ -63,12 +62,12 @@ wss.on('connection', (ws) => {
 app.post('/upload', upload.array('images'), (req, res) => {
     req.files.forEach((file) => {
         const imageUrl = `/uploads/${file.filename}`;
-        uploadedImages.push(imageUrl);
-        ratings[imageUrl] = [];
+        const photo = { id: photoIdCounter++, url: imageUrl, clientId: req.body.clientId, ratings: [] };
+        photos.push(photo);
 
         broadcast({
             type: 'newImage',
-            imageUrl,
+            photo,
         });
     });
 
